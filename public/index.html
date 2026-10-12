@@ -1,0 +1,114 @@
+
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+<title>Hospital Management</title>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<style>
+body{font-family:Arial;background:#eee;padding:20px}
+.box{background:white;padding:20px;max-width:950px;margin:auto}
+input,select{display:block;width:100%;padding:10px;margin:10px 0;box-sizing:border-box}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #ccc;padding:8px}
+.top{text-align:right}
+</style>
+</head>
+<body ng-controller="ctrl">
+
+<div class="box" ng-if="!logged">
+<h2>Receptionist Login</h2>
+<form ng-submit="login()">
+<input id="u" placeholder="Username" required>
+<input id="p" type="password" placeholder="Password" required>
+<button>Login</button>
+</form>
+<p>{{msg}}</p>
+</div>
+
+<div class="box" ng-if="logged">
+<div class="top"><button ng-click="logout()">Logout</button></div>
+<h2>Hospital Management System</h2>
+<h3>Patient Registration</h3>
+
+<form ng-submit="register()">
+<input ng-model="p.name" placeholder="Patient Name" required>
+<input type="number" ng-model="p.age" placeholder="Age" min="1" max="120" required>
+<label>Date</label>
+<input type="date" ng-model="p.date" required>
+<label>Time</label>
+<input type="time" ng-model="p.time" required>
+
+<select ng-model="p.department" required>
+<option value="">Select Department</option>
+<option>Cardiology</option>
+<option>Neurology</option>
+<option>Orthopedics</option>
+<option>General Medicine</option>
+</select>
+
+<select ng-model="p.doctor" required>
+<option value="">Select Doctor</option>
+<option>Dr. Ravi</option>
+</select>
+
+<button>Register Patient</button>
+</form>
+
+<p>{{msg}}</p>
+<h3>Registered Patients</h3>
+<table>
+<tr><th>S.No</th><th>Name</th><th>Age</th><th>Date</th><th>Time</th><th>Department</th><th>Doctor</th></tr>
+<tr ng-repeat="x in patients">
+<td>{{$index+1}}</td><td>{{x.name}}</td><td>{{x.age}}</td>
+<td>{{x.date || '-'}}</td><td>{{x.time || '-'}}</td>
+<td>{{x.department}}</td><td>{{x.doctor}}</td>
+</tr>
+<tr ng-if="!patients.length"><td colspan="7">No patients registered</td></tr>
+</table>
+</div>
+
+<script>
+angular.module("app",[]).controller("ctrl",function($scope,$http){
+$scope.logged=false;$scope.p={};$scope.patients=[];$scope.msg="";
+
+$scope.login=function(){
+if(document.getElementById("u").value.trim()=="receptionist" &&
+document.getElementById("p").value=="hospital123"){
+$scope.logged=true;$scope.load();
+}else $scope.msg="Invalid username or password";
+};
+
+$scope.logout=function(){
+$scope.logged=false;$scope.p={};$scope.msg="";
+};
+
+$scope.load=function(){
+$http.get("/patients").then(r=>$scope.patients=r.data);
+};
+
+function date(v){
+return v instanceof Date ?
+v.getFullYear()+"-"+String(v.getMonth()+1).padStart(2,"0")+"-"+String(v.getDate()).padStart(2,"0") : v;
+}
+
+function time(v){
+return v instanceof Date ?
+String(v.getHours()).padStart(2,"0")+":"+String(v.getMinutes()).padStart(2,"0") : v;
+}
+
+$scope.register=function(){
+let p=$scope.p;
+if(!p.name||!p.age||!p.date||!p.time||!p.department||!p.doctor){
+$scope.msg="Fill all fields";return;
+}
+$http.post("/patients",{
+name:p.name,age:p.age,date:date(p.date),time:time(p.time),
+department:p.department,doctor:p.doctor
+}).then(r=>{
+$scope.msg=r.data.message;$scope.p={};$scope.load();
+}).catch(()=> $scope.msg="Registration failed");
+};
+});
+</script>
+</body>
+</html>
